@@ -133,7 +133,7 @@ export const StellarNovaTrader = () => {
       {/* Header */}
       <div className='bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/30 rounded-lg p-6'>
         <h2 className='text-2xl font-bold text-primary mb-2'>
-          StellarNova AI Trader
+          🌌 StellarNova AI Trader
         </h2>
         <p className='text-gray-400'>
           Trade on MultiversX xExchange using natural language. Fully

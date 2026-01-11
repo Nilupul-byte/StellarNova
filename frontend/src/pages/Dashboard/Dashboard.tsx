@@ -7,7 +7,7 @@ import { StellarNovaTrader } from './widgets';
 
 const dashboardWidgets: WidgetType[] = [
   {
-    title: 'StellarNova AI Trader',
+    title: '🌌 StellarNova AI Trader',
     widget: StellarNovaTrader,
     description:
       'Trade on MultiversX using natural language. AI-powered intent parsing with real smart contract execution on Mainnet.',

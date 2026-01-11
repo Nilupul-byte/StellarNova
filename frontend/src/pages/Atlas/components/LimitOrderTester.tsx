@@ -354,7 +354,10 @@ export const LimitOrderTester = () => {
             )}
 
             {/* Step 2: Select Mode */}
-            {currentPrice && !mode && (
+            {currentPrice &&
+              (!mode ||
+                (mode === 'custom' &&
+                  (!customPrice || parseFloat(customPrice) <= 0))) && (
               <div className='flex flex-col gap-4'>
                 <div className='bg-blue-500 bg-opacity-10 border border-blue-500 rounded-lg p-4'>
                   <p className='text-sm text-secondary mb-1'>Current Price:</p>

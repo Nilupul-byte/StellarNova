@@ -81,12 +81,18 @@ export const OrderManager = () => {
     }
   };
 
-  // Format target price
+  // Format target price (proper BigInt division)
   const formatTargetPrice = (numHex: string, denomHex: string): string => {
     try {
       const num = BigInt('0x' + numHex);
       const denom = BigInt('0x' + denomHex);
-      const price = Number(num) / Number(denom);
+
+      // Avoid Number conversion overflow - do division in BigInt space
+      // Multiply numerator by 10^6 for 6 decimal places precision
+      const PRECISION = BigInt(1000000);
+      const scaled = (num * PRECISION) / denom;
+      const price = Number(scaled) / Number(PRECISION);
+
       return price.toFixed(6);
     } catch {
       return 'N/A';
@@ -101,23 +107,39 @@ export const OrderManager = () => {
 
   // Check if order is expired
   const isExpired = (expiresAt: Date): boolean => {
-    return new Date() > expiresAt;
+    try {
+      if (!expiresAt || isNaN(expiresAt.getTime())) {
+        return false; // Treat invalid dates as not expired
+      }
+      return new Date() > expiresAt;
+    } catch {
+      return false;
+    }
   };
 
   // Format time remaining
   const formatTimeRemaining = (expiresAt: Date): string => {
-    const now = new Date();
-    const diff = expiresAt.getTime() - now.getTime();
+    try {
+      // Check if date is valid
+      if (!expiresAt || isNaN(expiresAt.getTime())) {
+        return 'N/A';
+      }
 
-    if (diff <= 0) return 'Expired';
+      const now = new Date();
+      const diff = expiresAt.getTime() - now.getTime();
 
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+      if (diff <= 0) return 'Expired';
 
-    if (days > 0) return `${days}d ${hours % 24}h`;
-    if (hours > 0) return `${hours}h ${minutes % 60}m`;
-    return `${minutes}m`;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+
+      if (days > 0) return `${days}d ${hours % 24}h`;
+      if (hours > 0) return `${hours}h ${minutes % 60}m`;
+      return `${minutes}m`;
+    } catch {
+      return 'N/A';
+    }
   };
 
   if (!address) {
