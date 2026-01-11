@@ -18,6 +18,7 @@ export const LimitOrderTester = () => {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [mode, setMode] = useState<'instant' | 'waiting' | 'custom' | null>(null);
   const [customPrice, setCustomPrice] = useState<string>('');
+  const [customPriceConfirmed, setCustomPriceConfirmed] = useState(false);
   const [progressMessage, setProgressMessage] = useState<string>('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [testAmount, setTestAmount] = useState<string>('0.01'); // Default 0.01 (small test amount)
@@ -158,9 +159,16 @@ export const LimitOrderTester = () => {
     setCurrentPrice(null);
     setMode(null);
     setCustomPrice('');
+    setCustomPriceConfirmed(false);
     setSessionId(null);
     setError(null);
     setProgressMessage('');
+  };
+
+  const handleConfirmCustomPrice = () => {
+    if (customPrice && parseFloat(customPrice) > 0) {
+      setCustomPriceConfirmed(true);
+    }
   };
 
   const handleDirectionChange = (direction: 'buy' | 'sell') => {
@@ -354,10 +362,7 @@ export const LimitOrderTester = () => {
             )}
 
             {/* Step 2: Select Mode */}
-            {currentPrice &&
-              (!mode ||
-                (mode === 'custom' &&
-                  (!customPrice || parseFloat(customPrice) <= 0))) && (
+            {currentPrice && (!mode || (mode === 'custom' && !customPriceConfirmed)) && (
               <div className='flex flex-col gap-4'>
                 <div className='bg-blue-500 bg-opacity-10 border border-blue-500 rounded-lg p-4'>
                   <p className='text-sm text-secondary mb-1'>Current Price:</p>
@@ -451,15 +456,30 @@ export const LimitOrderTester = () => {
                       <input
                         type='number'
                         value={customPrice}
-                        onChange={(e) => setCustomPrice(e.target.value)}
-                        onFocus={() => setMode('custom')}
+                        onChange={(e) => {
+                          setCustomPrice(e.target.value);
+                          setCustomPriceConfirmed(false);
+                        }}
+                        onFocus={() => {
+                          setMode('custom');
+                          setCustomPriceConfirmed(false);
+                        }}
                         step='0.000001'
                         placeholder={`e.g., ${currentPrice.toFixed(6)}`}
                         className='w-full px-4 py-2 bg-secondary bg-opacity-20 border border-secondary rounded-lg text-primary focus:border-link focus:outline-none mb-2'
                       />
-                      <p className='text-xs text-secondary'>
+                      <p className='text-xs text-secondary mb-3'>
                         Current: {currentPrice.toFixed(6)} {toToken.ticker}
                       </p>
+                      <button
+                        onClick={handleConfirmCustomPrice}
+                        disabled={
+                          !customPrice || parseFloat(customPrice) <= 0
+                        }
+                        className='w-full py-2 px-4 rounded-lg bg-link text-white font-medium hover:bg-opacity-90 disabled:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 transition-all'
+                      >
+                        Continue with Custom Price →
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -469,9 +489,7 @@ export const LimitOrderTester = () => {
             {/* Step 3: Create Order */}
             {currentPrice &&
               ((mode === 'instant' || mode === 'waiting') ||
-                (mode === 'custom' &&
-                  customPrice &&
-                  parseFloat(customPrice) > 0)) && (
+                (mode === 'custom' && customPriceConfirmed)) && (
               <div className='flex flex-col gap-4'>
                 <div className='bg-secondary bg-opacity-20 border border-secondary rounded-lg p-4'>
                   <div className='grid grid-cols-2 gap-4'>
