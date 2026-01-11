@@ -483,7 +483,9 @@ export const LimitOrderTester = () => {
                       <p className='text-lg font-semibold text-primary'>
                         {mode === 'instant'
                           ? (currentPrice * 1.0001).toFixed(6)
-                          : (currentPrice * 0.9999).toFixed(6)}
+                          : mode === 'waiting'
+                          ? (currentPrice * 0.9999).toFixed(6)
+                          : parseFloat(customPrice || '0').toFixed(6)}
                       </p>
                     </div>
                   </div>
@@ -492,7 +494,9 @@ export const LimitOrderTester = () => {
                     <p className='text-sm font-medium text-primary'>
                       {mode === 'instant'
                         ? '⚡ INSTANT (0.01% ABOVE)'
-                        : '⏳ WAITING (0.01% BELOW)'}
+                        : mode === 'waiting'
+                        ? '⏳ DELAYED (0.01% BELOW)'
+                        : `🎯 CUSTOM (${customPrice ? parseFloat(customPrice).toFixed(6) : '0.000000'})`}
                     </p>
                   </div>
                 </div>

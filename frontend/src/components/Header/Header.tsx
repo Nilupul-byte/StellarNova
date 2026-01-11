@@ -1,4 +1,3 @@
-import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import {
   faBell,
   faCompass,
@@ -10,7 +9,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import { MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GITHUB_REPO_URL } from 'config';
 import {
   ACCOUNTS_ENDPOINT,
   getAccountProvider,
@@ -49,11 +47,6 @@ export const Header = () => {
     navigate(RouteNamesEnum.home);
   };
 
-  const handleGitHubBrowsing = (event: MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    window.open(GITHUB_REPO_URL);
-  };
-
   const handleLogIn = (event: MouseEvent<HTMLElement>) => {
     event.preventDefault();
     navigate(RouteNamesEnum.unlock);
@@ -70,12 +63,6 @@ export const Header = () => {
   };
 
   const headerBrowseButtons: HeaderBrowseButtonType[] = [
-    {
-      label: 'GitHub',
-      handleClick: handleGitHubBrowsing,
-      icon: faGithub as IconDefinition,
-      isVisible: true
-    },
     {
       label: 'Atlas AI Advisor',
       handleClick: handleAtlasNavigation,
