@@ -464,7 +464,11 @@ export const LimitOrderTester = () => {
             )}
 
             {/* Step 3: Create Order */}
-            {currentPrice && mode && (
+            {currentPrice &&
+              ((mode === 'instant' || mode === 'waiting') ||
+                (mode === 'custom' &&
+                  customPrice &&
+                  parseFloat(customPrice) > 0)) && (
               <div className='flex flex-col gap-4'>
                 <div className='bg-secondary bg-opacity-20 border border-secondary rounded-lg p-4'>
                   <div className='grid grid-cols-2 gap-4'>
