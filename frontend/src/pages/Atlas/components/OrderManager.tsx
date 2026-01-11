@@ -93,12 +93,6 @@ export const OrderManager = () => {
       const scaled = (num * PRECISION) / denom;
       const price = Number(scaled) / Number(PRECISION);
 
-      // Detect invalid prices (likely from incorrect decimal adjustments)
-      // Reasonable price range: 0.000001 to 1,000,000
-      if (price < 0.000001 || price > 1000000) {
-        return 'Invalid';
-      }
-
       return price.toFixed(6);
     } catch {
       return 'N/A';
@@ -199,35 +193,27 @@ export const OrderManager = () => {
             No pending orders found
           </div>
         ) : (
-          <div className='space-y-4'>
+          <div className='space-y-3'>
             {orders.map((order) => {
               const expired = isExpired(order.expiresAt);
               const fromTicker = getTokenTicker(order.fromToken);
               const toTicker = getTokenTicker(order.toToken);
               const fromDecimals = fromTicker === 'USDC' ? 6 : 18;
-              const targetPrice = formatTargetPrice(
-                order.targetPriceNum,
-                order.targetPriceDenom
-              );
-              const isInvalidPrice =
-                targetPrice === 'Invalid' || targetPrice === 'N/A';
 
               return (
                 <div
                   key={order.orderId}
-                  className={`p-5 rounded-lg border-2 transition-all ${
+                  className={`p-4 rounded-lg border-2 ${
                     expired
                       ? 'border-yellow-500 bg-yellow-500 bg-opacity-5'
-                      : isInvalidPrice
-                      ? 'border-red-500 bg-red-500 bg-opacity-5'
-                      : 'border-secondary bg-secondary bg-opacity-10 hover:border-link hover:bg-opacity-20'
+                      : 'border-secondary bg-secondary bg-opacity-10'
                   }`}
                 >
                   <div className='flex items-start justify-between gap-4'>
-                    <div className='flex-1 space-y-3'>
+                    <div className='flex-1'>
                       {/* Order Header */}
-                      <div className='flex items-center gap-2'>
-                        <span className='text-sm px-3 py-1 rounded-full bg-link bg-opacity-20 text-link font-semibold'>
+                      <div className='flex items-center gap-2 mb-2'>
+                        <span className='text-sm text-primary font-medium'>
                           #{order.orderId}
                         </span>
                         {expired && (
@@ -235,54 +221,39 @@ export const OrderManager = () => {
                             ⏰ Expired
                           </span>
                         )}
-                        {isInvalidPrice && (
-                          <span className='text-xs px-2 py-1 rounded-full bg-red-500 bg-opacity-20 text-red-500 font-medium'>
-                            ⚠️ Invalid Price
-                          </span>
-                        )}
                       </div>
 
                       {/* Token Pair */}
-                      <div>
-                        <p className='text-xl font-bold text-primary mb-1'>
+                      <div className='mb-2'>
+                        <p className='text-lg font-semibold text-primary'>
                           {fromTicker} → {toTicker}
                         </p>
                         <p className='text-sm text-secondary'>
-                          Amount:{' '}
-                          <span className='font-semibold text-primary'>
-                            {formatAmount(order.fromAmount, fromDecimals)}{' '}
-                            {fromTicker}
-                          </span>
+                          Amount: {formatAmount(order.fromAmount, fromDecimals)}{' '}
+                          {fromTicker}
                         </p>
                       </div>
 
                       {/* Order Details */}
-                      <div className='grid grid-cols-2 gap-3 pt-2 border-t border-secondary border-opacity-50'>
+                      <div className='grid grid-cols-2 gap-2 text-xs'>
                         <div>
-                          <p className='text-xs text-secondary mb-1'>
-                            Target Price:
-                          </p>
-                          <p
-                            className={`font-semibold ${
-                              isInvalidPrice
-                                ? 'text-red-500'
-                                : 'text-primary text-base'
-                            }`}
-                          >
-                            {targetPrice}{' '}
-                            {!isInvalidPrice && <span>{toTicker}</span>}
+                          <p className='text-secondary'>Target Price:</p>
+                          <p className='text-primary font-medium'>
+                            {formatTargetPrice(
+                              order.targetPriceNum,
+                              order.targetPriceDenom
+                            )}{' '}
+                            {toTicker}
                           </p>
                         </div>
                         <div>
-                          <p className='text-xs text-secondary mb-1'>
-                            Expires:
-                          </p>
+                          <p className='text-secondary'>Expires:</p>
                           <p
-                            className={`font-semibold text-base ${
+                            className={
                               expired
-                                ? 'text-yellow-500'
-                                : 'text-primary'
-                            }`}
+                                ? 'text-yellow-500 font-medium'
+                                : 'text-primary font-medium'
+                            }
                           >
                             {formatTimeRemaining(order.expiresAt)}
                           </p>
@@ -294,7 +265,7 @@ export const OrderManager = () => {
                     <button
                       onClick={() => handleCancelOrder(order.orderId)}
                       disabled={cancellingOrderId === order.orderId}
-                      className='px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 disabled:bg-secondary disabled:cursor-not-allowed transition-all whitespace-nowrap h-fit'
+                      className='px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 disabled:bg-secondary disabled:cursor-not-allowed transition-all whitespace-nowrap'
                     >
                       {cancellingOrderId === order.orderId ? (
                         <span className='flex items-center gap-2'>

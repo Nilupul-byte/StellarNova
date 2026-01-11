@@ -2,6 +2,16 @@
 
 AI-powered trading agent on MultiversX. Execute trades using natural language without repeated wallet signatures.
 
+## 🚀 Deployed Contract (Mainnet)
+
+**Contract Address**: `erd1qqqqqqqqqqqqqpgqhcmms89zn6997pvpv9g7ckpcxz4mnjn088zqtvnz29`
+
+🎉 **Live on Mainnet with 150+ Transactions!**
+
+- [View on Explorer](https://explorer.multiversx.com/accounts/erd1qqqqqqqqqqqqqpgqhcmms89zn6997pvpv9g7ckpcxz4mnjn088zqtvnz29)
+- Architecture: JEXchange (Direct ESDT payment, no vault needed)
+- Supports: Limit orders with automatic execution when target price is met
+
 ## Architecture
 
 **Vault-Based Approval Model**
