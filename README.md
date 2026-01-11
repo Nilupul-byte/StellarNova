@@ -196,26 +196,7 @@ StellarNova is currently in **beta testing**. While we've implemented security b
 **This is NOT financial advice. Always:**
 - Start with small amounts
 - Understand slippage and price impact
-- Never invest more than you can afford to lose
 - Do your own research (DYOR)
-
----
-
-## Contributing
-
-We welcome contributions! Please see our contributing guidelines.
-
-**Key Areas:**
-- Smart contract security improvements
-- AI model fine-tuning
-- UI/UX enhancements
-- Additional DEX integrations
-
----
-
-## License
-
-MIT License - See [LICENSE](LICENSE) file for details
 
 ---
 
@@ -223,11 +204,7 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 Built with ❤️ for the MultiversX ecosystem
 
-**Contact:**
-- GitHub: [Your GitHub]
-- Twitter: [@StellarNova]
-- Discord: [Discord Server]
-- Email: contact@stellarnova.io
+**Contact:** nilupulweerasingh27@gmail.com
 
 ---
 
