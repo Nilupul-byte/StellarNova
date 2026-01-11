@@ -73,8 +73,21 @@ export const AtlasTrader = () => {
         );
       }
 
+      // Step 2b: Fetch current price
+      const priceData = await getCurrentPriceFromXExchange(
+        tradeIntent.command.fromToken!,
+        tradeIntent.command.toToken!
+      );
+
+      // Add current price to marketData
+      const enrichedMarketData = {
+        ...marketData,
+        currentPrice: priceData?.price,
+        tokenPair: `${tradeIntent.command.toToken}/${tradeIntent.command.fromToken}`
+      };
+
       // Step 3: Get AI analysis and recommendations
-      const aiAnalysis = await analyzeTradeWithAI(prompt, marketData);
+      const aiAnalysis = await analyzeTradeWithAI(prompt, enrichedMarketData);
 
       setAnalysis(aiAnalysis);
       setTradeIntent(tradeIntent); // Store for later execution

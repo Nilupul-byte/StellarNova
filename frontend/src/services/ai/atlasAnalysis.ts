@@ -14,6 +14,8 @@ interface MarketData {
   };
   priceChange24h: number;
   volume24h: number;
+  currentPrice?: number;
+  tokenPair?: string;
 }
 
 interface ExecutionOption {
@@ -29,6 +31,8 @@ interface AnalysisResult {
   liquidity: { depth: string; usdValue: number };
   priceChange24h: number;
   volume24h: number;
+  currentPrice?: number;
+  tokenPair?: string;
   recommendation: string;
   options: ExecutionOption[];
 }
@@ -51,23 +55,23 @@ export async function analyzeTradeWithAI(
 Your role:
 - Analyze market conditions (trend, volatility, liquidity)
 - Provide clear, actionable trading recommendations
-- Suggest 3 execution strategies (market buy, delayed buy, split order)
-- Assess risk for each strategy
+- Use **bold text** for key terms (wrap important words in **asterisks**)
 
 Market Data:
+- Current Price: ${marketData.currentPrice ? `$${marketData.currentPrice.toFixed(6)}` : 'N/A'}
 - Trend: ${marketData.trend} (${marketData.priceChange24h.toFixed(2)}% change)
 - Volatility: ${marketData.volatility}
-- Liquidity: ${
-    marketData.liquidity.depth
-  } ($${marketData.liquidity.usdValue.toLocaleString()})
+- Liquidity: ${marketData.liquidity.depth} ($${marketData.liquidity.usdValue.toLocaleString()})
 - 24h Volume: $${marketData.volume24h.toLocaleString()}
 
-Provide:
-1. Brief market assessment (2 sentences)
-2. Recommendation (execute now / wait / split order)
-3. Risk warning if applicable
+Format your response as:
+**Market Assessment:** [2 sentences about current conditions]
 
-Keep your response concise and actionable.`;
+**Recommendation:** [Execute now / Wait / Split order - explain why]
+
+**Risk:** [Key risk factors to consider]
+
+Keep it concise, actionable, and use **bold** for important terms.`;
 
   try {
     const response = await fetch(
@@ -106,6 +110,8 @@ Keep your response concise and actionable.`;
       liquidity: marketData.liquidity,
       priceChange24h: marketData.priceChange24h,
       volume24h: marketData.volume24h,
+      currentPrice: marketData.currentPrice,
+      tokenPair: marketData.tokenPair,
       recommendation: aiResponse,
       options
     };
@@ -192,6 +198,8 @@ function generateFallbackAnalysis(marketData: MarketData): AnalysisResult {
     liquidity: marketData.liquidity,
     priceChange24h: marketData.priceChange24h,
     volume24h: marketData.volume24h,
+    currentPrice: marketData.currentPrice,
+    tokenPair: marketData.tokenPair,
     recommendation,
     options: generateExecutionOptions(marketData)
   };
