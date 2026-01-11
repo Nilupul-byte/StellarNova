@@ -52,7 +52,7 @@ export const Footer = () => {
 
           <FontAwesomeIcon icon={faHeart} className={styles.footerHeartIcon} />
 
-          <span>by the MultiversX team, {currentYear}</span>
+          <span>by StellarNova team</span>
         </div>
       </div>
     </footer>

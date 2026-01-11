@@ -62,13 +62,6 @@ export const ExecutionOptions = ({
                     <span className='font-semibold text-primary'>
                       Option {option.id}: {option.action}
                     </span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full border ${getRiskColor(
-                        option.risk
-                      )}`}
-                    >
-                      {option.risk} risk
-                    </span>
                   </div>
                   <p className='text-sm text-secondary'>{option.description}</p>
                 </div>

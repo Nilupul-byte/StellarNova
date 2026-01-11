@@ -16,7 +16,8 @@ export const LimitOrderTester = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
-  const [mode, setMode] = useState<'instant' | 'waiting' | null>(null);
+  const [mode, setMode] = useState<'instant' | 'waiting' | 'custom' | null>(null);
+  const [customPrice, setCustomPrice] = useState<string>('');
   const [progressMessage, setProgressMessage] = useState<string>('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [testAmount, setTestAmount] = useState<string>('0.01'); // Default 0.01 (small test amount)
@@ -83,9 +84,22 @@ export const LimitOrderTester = () => {
       if (mode === 'instant') {
         // 0.01% ABOVE current price (executes immediately)
         targetPrice = currentPrice * 1.0001;
-      } else {
+      } else if (mode === 'waiting') {
         // 0.01% BELOW current price (waits for price drop)
         targetPrice = currentPrice * 0.9999;
+      } else if (mode === 'custom') {
+        // Custom price entered by user
+        const customPriceNum = parseFloat(customPrice);
+        if (isNaN(customPriceNum) || customPriceNum <= 0) {
+          setError('Invalid custom price');
+          setIsLoading(false);
+          return;
+        }
+        targetPrice = customPriceNum;
+      } else {
+        setError('Invalid mode selected');
+        setIsLoading(false);
+        return;
       }
 
       console.log('🎯 Target price:', {
@@ -143,6 +157,7 @@ export const LimitOrderTester = () => {
   const handleReset = () => {
     setCurrentPrice(null);
     setMode(null);
+    setCustomPrice('');
     setSessionId(null);
     setError(null);
     setProgressMessage('');
@@ -160,8 +175,8 @@ export const LimitOrderTester = () => {
   if (!fromToken || !toToken) {
     return (
       <Card
-        title='🧪 Limit Order Tester'
-        description='Simple testing interface'
+        title='⚡ Limit Orders'
+        description='Non-custodial on-chain swaps'
       >
         <div className='text-red-500'>
           ❌ Invalid token configuration. Please check token setup.
@@ -172,8 +187,8 @@ export const LimitOrderTester = () => {
 
   return (
     <Card
-      title='🧪 Limit Order Tester'
-      description='JEXchange Architecture - Direct ESDT payment (no vault needed)'
+      title='⚡ Limit Orders'
+      description='Non-custodial on-chain swaps'
     >
       <div className='flex flex-col gap-6'>
         {/* Error Message */}
@@ -353,7 +368,7 @@ export const LimitOrderTester = () => {
 
                 <div className='border-t border-secondary pt-4'>
                   <h3 className='text-lg font-semibold text-primary mb-4'>
-                    📍 Step 2: Select Test Mode
+                    📍 Step 2: Select Order Type
                   </h3>
 
                   <div className='grid grid-cols-1 gap-4'>
@@ -366,7 +381,7 @@ export const LimitOrderTester = () => {
                         <div className='flex-1'>
                           <div className='flex items-center gap-2 mb-2'>
                             <span className='font-semibold text-primary'>
-                              ⚡ Mode 1: INSTANT EXECUTION
+                              ⚡ INSTANT EXECUTION
                             </span>
                             <span className='text-xs px-2 py-1 rounded-full border border-green-500 text-green-500'>
                               0.01% ABOVE
@@ -395,7 +410,7 @@ export const LimitOrderTester = () => {
                         <div className='flex-1'>
                           <div className='flex items-center gap-2 mb-2'>
                             <span className='font-semibold text-primary'>
-                              ⏳ Mode 2: WAITING
+                              ⏳ DELAYED EXECUTION
                             </span>
                             <span className='text-xs px-2 py-1 rounded-full border border-yellow-500 text-yellow-500'>
                               0.01% BELOW
@@ -414,6 +429,35 @@ export const LimitOrderTester = () => {
                         </div>
                       </div>
                     </button>
+
+                    {/* Mode 3: Custom Price */}
+                    <div className='p-4 rounded-lg border-2 border-link'>
+                      <div className='mb-3'>
+                        <div className='flex items-center gap-2 mb-2'>
+                          <span className='font-semibold text-primary'>
+                            🎯 CUSTOM PRICE
+                          </span>
+                          <span className='text-xs px-2 py-1 rounded-full border border-link text-link'>
+                            YOUR PRICE
+                          </span>
+                        </div>
+                        <p className='text-xs text-secondary'>
+                          Set your own target price for execution
+                        </p>
+                      </div>
+                      <input
+                        type='number'
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(e.target.value)}
+                        onFocus={() => setMode('custom')}
+                        step='0.000001'
+                        placeholder={`e.g., ${currentPrice.toFixed(6)}`}
+                        className='w-full px-4 py-2 bg-secondary bg-opacity-20 border border-secondary rounded-lg text-primary focus:border-link focus:outline-none mb-2'
+                      />
+                      <p className='text-xs text-secondary'>
+                        Current: {currentPrice.toFixed(6)} {toToken.ticker}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
