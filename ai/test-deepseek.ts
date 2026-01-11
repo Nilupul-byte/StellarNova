@@ -18,7 +18,13 @@ async function runTests() {
   console.log('🧪 Testing DeepSeek AI Integration\n');
   console.log('='.repeat(60));
 
-  const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-fa179d4a1d8842acbc7dfeff1c3db803';
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+
+  if (!apiKey) {
+    console.error('❌ DEEPSEEK_API_KEY environment variable is required');
+    console.error('   Set it with: export DEEPSEEK_API_KEY=your_key_here');
+    process.exit(1);
+  }
 
   for (const prompt of TEST_PROMPTS) {
     console.log(`\n📝 Prompt: "${prompt}"`);
