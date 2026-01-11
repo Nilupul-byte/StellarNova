@@ -6,17 +6,22 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import svgrPlugin from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
-const https = {
-  key: fs.readFileSync('./certificates/localhost.multiversx.com+3-key.pem'),
-  cert: fs.readFileSync('./certificates/localhost.multiversx.com+3.pem')
-};
+// Only load HTTPS certificates in local development (when certificates exist)
+const certKeyPath = './certificates/localhost.multiversx.com+3-key.pem';
+const certPath = './certificates/localhost.multiversx.com+3.pem';
+const httpsConfig = fs.existsSync(certKeyPath) && fs.existsSync(certPath)
+  ? {
+      key: fs.readFileSync(certKeyPath),
+      cert: fs.readFileSync(certPath)
+    }
+  : undefined;
 
 export default defineConfig({
   server: {
     port: Number(process.env.PORT) || 3000,
     strictPort: true,
     host: '0.0.0.0',
-    https,
+    https: httpsConfig,
     watch: {
       usePolling: false,
       useFsEvents: false,
@@ -54,7 +59,7 @@ export default defineConfig({
   },
   preview: {
     port: 3002,
-    https: true,
+    https: httpsConfig,
     host: 'localhost',
     strictPort: true
   }
