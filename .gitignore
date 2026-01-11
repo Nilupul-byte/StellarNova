@@ -1,0 +1,72 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+build/
+dist/
+.next/
+out/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Sensitive Data (MultiversX Wallets & Keys)
+*.pem
+executor-wallet.pem
+stellarnova-deployer.pem
+WALLET_INFO.txt
+*wallet*.json
+*.key
+*secret*
+*private-key*
+mnemonic.txt
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Claude Code CLI
+.claude/
+
+# Misc
+.turbo/
+.cache/
+
+# Backups & Temporary Files
+*.backup
+*.backup-*
+src.backup-*
+*.old
+*.tmp
+
+# Build Artifacts (Rust)
+contracts/stellarnova-sc/meta/target/
+contracts/stellarnova-sc/target/
+
+# Old Implementations (if restored)
+frontend-old-nextjs/
+
+# Cleanup
+junk/

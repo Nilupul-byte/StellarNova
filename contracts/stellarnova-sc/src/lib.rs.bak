@@ -1,0 +1,304 @@
+#![no_std]
+
+multiversx_sc::imports!();
+
+pub mod storage;
+pub mod events;
+pub mod errors;
+
+/// StellarNova Smart Contract
+/// AI-powered trading agent on MultiversX
+///
+/// Core Features:
+/// - Deposit tokens into user-specific vault
+/// - Execute trades via natural language (backend-triggered)
+/// - Withdraw tokens anytime
+/// - One-time deposit = multiple trades (no repeated signatures)
+#[multiversx_sc::contract]
+pub trait StellarNova: storage::StorageModule + events::EventsModule {
+
+    /// Initialize the contract
+    ///
+    /// # Arguments
+    /// * `xexchange_router` - Address of xExchange router contract
+    /// * `initial_tokens` - List of tokens to whitelist (EGLD, USDC, WEGLD)
+    /// * `max_slippage_bp` - Maximum slippage in basis points (e.g., 500 = 5%)
+    #[init]
+    fn init(
+        &self,
+        xexchange_router: ManagedAddress,
+        initial_tokens: MultiValueEncoded<TokenIdentifier>,
+        max_slippage_bp: u64,
+    ) {
+        let caller = self.blockchain().get_caller();
+
+        self.owner().set(&caller);
+        self.xexchange_router().set(&xexchange_router);
+        self.max_slippage().set(max_slippage_bp);
+        self.paused().set(false);
+
+        // Whitelist initial tokens
+        for token in initial_tokens {
+            self.whitelisted_tokens().insert(token);
+        }
+    }
+
+    // ========== USER ENDPOINTS ==========
+
+    /// Deposit tokens into the vault
+    /// Users send tokens to this endpoint to enable gasless trading
+    ///
+    /// # Payment
+    /// User must send tokens with this call
+    #[payable("*")]
+    #[endpoint(deposit)]
+    fn deposit(&self) {
+        self.require_not_paused();
+
+        let caller = self.blockchain().get_caller();
+        let (token, amount) = self.call_value().single_fungible_esdt();
+
+        require!(amount > 0, "Amount must be greater than zero");
+        require!(
+            self.whitelisted_tokens().contains(&token),
+            "Token is not whitelisted for trading"
+        );
+
+        // Update user balance
+        let balance_key = (caller.clone(), token.clone());
+        self.user_balances().entry(balance_key).or_default().update(|balance| {
+            *balance += &amount;
+        });
+
+        let new_balance = self.user_balances().get(&(caller.clone(), token.clone())).unwrap_or_default();
+
+        // Emit event
+        self.deposit_event(&caller, &token, &amount, &new_balance);
+    }
+
+    /// Execute a market swap
+    /// Called by backend after AI parses user prompt
+    /// No wallet signature required (uses deposited funds)
+    ///
+    /// # Arguments
+    /// * `user` - User address who owns the funds
+    /// * `from_token` - Token to sell
+    /// * `to_token` - Token to buy
+    /// * `from_amount` - Amount to swap
+    /// * `min_amount_out` - Minimum acceptable output (slippage protection)
+    #[endpoint(executeTrade)]
+    fn execute_trade(
+        &self,
+        user: ManagedAddress,
+        from_token: TokenIdentifier,
+        to_token: TokenIdentifier,
+        from_amount: BigUint,
+        min_amount_out: BigUint,
+    ) {
+        self.require_not_paused();
+
+        // Validation
+        require!(from_amount > 0, "Amount must be greater than zero");
+        require!(from_token != to_token, "Cannot swap token to itself");
+        require!(
+            self.whitelisted_tokens().contains(&from_token),
+            "Token is not whitelisted for trading"
+        );
+        require!(
+            self.whitelisted_tokens().contains(&to_token),
+            "Token is not whitelisted for trading"
+        );
+
+        // Check user balance
+        let balance_key = (user.clone(), from_token.clone());
+        let user_balance = self.user_balances().get(&balance_key).unwrap_or_default();
+        require!(user_balance >= from_amount, "Insufficient balance in vault");
+
+        // Deduct from user balance
+        self.user_balances().entry(balance_key).and_modify(|balance| {
+            *balance -= &from_amount;
+        });
+
+        // Execute swap on xExchange
+        let amount_out = self.execute_dex_swap(
+            &from_token,
+            &to_token,
+            &from_amount,
+            &min_amount_out,
+        );
+
+        // Credit output token to user
+        let output_key = (user.clone(), to_token.clone());
+        self.user_balances().entry(output_key).or_default().update(|balance| {
+            *balance += &amount_out;
+        });
+
+        // Emit event
+        let timestamp = self.blockchain().get_block_timestamp();
+        self.trade_executed_event(
+            &user,
+            &from_token,
+            &to_token,
+            &from_amount,
+            &amount_out,
+            timestamp,
+        );
+    }
+
+    /// Withdraw tokens from vault
+    /// User can withdraw their balance anytime
+    ///
+    /// # Arguments
+    /// * `token` - Token to withdraw
+    /// * `amount` - Amount to withdraw (0 = withdraw all)
+    #[endpoint(withdraw)]
+    fn withdraw(&self, token: TokenIdentifier, amount: BigUint) {
+        self.require_not_paused();
+
+        let caller = self.blockchain().get_caller();
+        let balance_key = (caller.clone(), token.clone());
+        let user_balance = self.user_balances().get(&balance_key).unwrap_or_default();
+
+        require!(user_balance > 0, "Insufficient balance in vault");
+
+        // Determine withdrawal amount (0 = withdraw all)
+        let withdraw_amount = if amount == 0 {
+            user_balance.clone()
+        } else {
+            require!(amount <= user_balance, "Insufficient balance in vault");
+            amount
+        };
+
+        // Update balance
+        self.user_balances().entry(balance_key).and_modify(|balance| {
+            *balance -= &withdraw_amount;
+        });
+
+        let remaining_balance = self.user_balances().get(&(caller.clone(), token.clone())).unwrap_or_default();
+
+        // Send tokens back to user
+        self.send().direct_esdt(&caller, &token, 0, &withdraw_amount);
+
+        // Emit event
+        self.withdraw_event(&caller, &token, &withdraw_amount, &remaining_balance);
+    }
+
+    // ========== ADMIN ENDPOINTS ==========
+
+    /// Add token to whitelist
+    #[only_owner]
+    #[endpoint(whitelistToken)]
+    fn whitelist_token(&self, token: TokenIdentifier) {
+        require!(
+            !self.whitelisted_tokens().contains(&token),
+            "Token already whitelisted"
+        );
+
+        self.whitelisted_tokens().insert(token.clone());
+        self.token_whitelisted_event(&token);
+    }
+
+    /// Remove token from whitelist
+    #[only_owner]
+    #[endpoint(removeToken)]
+    fn remove_token(&self, token: TokenIdentifier) {
+        require!(
+            self.whitelisted_tokens().contains(&token),
+            "Token not in whitelist"
+        );
+
+        self.whitelisted_tokens().swap_remove(&token);
+        self.token_removed_event(&token);
+    }
+
+    /// Pause/unpause contract (emergency stop)
+    #[only_owner]
+    #[endpoint(setPaused)]
+    fn set_paused(&self, paused: bool) {
+        self.paused().set(paused);
+        self.pause_state_changed_event(paused);
+    }
+
+    /// Update maximum slippage tolerance
+    #[only_owner]
+    #[endpoint(setMaxSlippage)]
+    fn set_max_slippage(&self, max_slippage_bp: u64) {
+        self.max_slippage().set(max_slippage_bp);
+    }
+
+    /// Update xExchange router address
+    #[only_owner]
+    #[endpoint(setXExchangeRouter)]
+    fn set_xexchange_router(&self, router: ManagedAddress) {
+        self.xexchange_router().set(&router);
+    }
+
+    // ========== INTERNAL FUNCTIONS ==========
+
+    /// Execute swap on xExchange DEX
+    /// This is a simplified implementation for MVP
+    /// Production version should use xExchange SDK
+    ///
+    /// # Arguments
+    /// * `from_token` - Input token
+    /// * `to_token` - Output token
+    /// * `from_amount` - Input amount
+    /// * `min_amount_out` - Minimum output (slippage protection)
+    ///
+    /// # Returns
+    /// Actual amount received from swap
+    fn execute_dex_swap(
+        &self,
+        from_token: &TokenIdentifier,
+        to_token: &TokenIdentifier,
+        from_amount: &BigUint,
+        min_amount_out: &BigUint,
+    ) -> BigUint {
+        let router = self.xexchange_router().get();
+
+        // For MVP: Simplified swap logic
+        // In production, this would call xExchange router's multiPairSwap endpoint
+        //
+        // Expected call structure:
+        // self.tx()
+        //     .to(&router)
+        //     .typed(xexchange_proxy::XExchangeProxy)
+        //     .swap_tokens_fixed_input(to_token, min_amount_out)
+        //     .payment((from_token, 0, from_amount))
+        //     .returns(ReturnsResult)
+        //     .sync_call();
+
+        // HACKATHON PLACEHOLDER:
+        // Return simulated output (90% of input for demo purposes)
+        // Replace this with actual xExchange integration
+        let simulated_output = from_amount * &BigUint::from(90u64) / &BigUint::from(100u64);
+
+        require!(
+            simulated_output >= *min_amount_out,
+            "Slippage tolerance exceeded"
+        );
+
+        simulated_output
+    }
+
+    /// Require contract is not paused
+    fn require_not_paused(&self) {
+        require!(!self.paused().get(), errors::ERROR_CONTRACT_PAUSED);
+    }
+
+    // ========== VIEW FUNCTIONS ==========
+
+    /// Get user's balance for a specific token
+    #[view(getUserTokenBalance)]
+    fn get_user_token_balance(&self, user: ManagedAddress, token: TokenIdentifier) -> BigUint {
+        self.user_balances()
+            .get(&(user, token))
+            .unwrap_or_default()
+    }
+
+    /// Check if token is whitelisted
+    #[view(isTokenWhitelisted)]
+    fn is_token_whitelisted(&self, token: TokenIdentifier) -> bool {
+        self.whitelisted_tokens().contains(&token)
+    }
+}

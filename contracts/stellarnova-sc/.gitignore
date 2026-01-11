@@ -1,0 +1,27 @@
+# Rust
+target/
+Cargo.lock
+
+# MultiversX
+output/
+output-docker/
+wasm/target/
+*.wasm
+*.wat
+*.abi.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Wallet & Secrets (NEVER COMMIT THESE!)
+*.pem
+WALLET_INFO.txt
+deployed-contract.txt

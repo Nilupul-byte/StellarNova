@@ -1,0 +1,12 @@
+{
+    "name": "stellarnova-sc",
+    "description": "StellarNova AI Trading Agent Smart Contract",
+    "authors": ["StellarNova Team"],
+    "tags": ["trading", "ai", "dex", "defi"],
+    "language": "rust",
+    "buildSystem": "cargo",
+    "main": "src/lib.rs",
+    "output": "output",
+    "outputWasm": "output/stellarnova-sc.wasm",
+    "outputAbi": "output/stellarnova-sc.abi.json"
+}
