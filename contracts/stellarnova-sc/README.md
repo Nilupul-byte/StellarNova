@@ -9,76 +9,82 @@ AI-powered trading agent on MultiversX. Execute trades using natural language wi
 🎉 **Live on Mainnet with 150+ Transactions!**
 
 - [View on Explorer](https://explorer.multiversx.com/accounts/erd1qqqqqqqqqqqqqpgqhcmms89zn6997pvpv9g7ckpcxz4mnjn088zqtvnz29)
-- Architecture: JEXchange (Direct ESDT payment, no vault needed)
+- Architecture: Direct on-chain execution with ESDT payment (fully non-custodial, no vault needed)
 - Supports: Limit orders with automatic execution when target price is met
 
 ## Architecture
 
-**Vault-Based Approval Model**
-- Users deposit tokens once into the contract
-- Backend executes trades on behalf of users (no signature per trade)
-- Users can withdraw anytime
-- Non-custodial: only user can withdraw their funds
+**Direct ESDT Payment Model**
+- Users send tokens directly with their limit order transaction
+- Tokens are locked in the contract until execution, cancellation, or expiration
+- Backend monitors and executes orders when price conditions are met
+- Fully non-custodial: users maintain complete control of their funds
+- No deposit/withdraw needed - seamless on-chain execution
 
 ## Core Endpoints
 
 ### User Endpoints
 
-#### `deposit()`
-Deposit tokens into your vault.
+#### `createLimitOrder`
+Create a limit order with direct ESDT payment.
 
-**Payment**: Send tokens with transaction
+**Payment**: Send tokens with transaction (ESDT transfer pattern)
 **Access**: Anyone
 **Example**:
 ```bash
-# Deposit 100 USDC
+# Create limit order: Buy WEGLD with 10 USDC at target price
 mxpy contract call <CONTRACT_ADDRESS> \
-  --function deposit \
+  --function ESDTTransfer \
+  --arguments str:USDC-c76f1f 0x989680 \
+              str:createLimitOrder \
+              str:WEGLD-bd4d79 \
+              0x025E70 0x03E8 0x05DC 0x015180 \
   --pem wallet.pem \
-  --gas-limit 10000000 \
-  --chain devnet \
-  --esdt-transfers USDC-abc123:100000000
-```
-
-#### `executeTrade(user, from_token, to_token, from_amount, min_amount_out)`
-Execute a token swap (called by backend after AI parsing).
-
-**Parameters**:
-- `user`: User address
-- `from_token`: Token to sell
-- `to_token`: Token to buy
-- `from_amount`: Amount to swap
-- `min_amount_out`: Minimum acceptable output (slippage protection)
-
-**Access**: Anyone (backend service)
-**Example**:
-```bash
-# Swap 50 USDC for EGLD
-mxpy contract call <CONTRACT_ADDRESS> \
-  --function executeTrade \
-  --arguments <USER_ADDRESS> str:USDC-abc123 str:EGLD 50000000 45000000 \
-  --pem backend.pem \
   --gas-limit 20000000 \
-  --chain devnet
+  --chain mainnet
 ```
 
-#### `withdraw(token, amount)`
-Withdraw tokens from vault.
+**Transaction Format**:
+```
+ESDTTransfer@<fromToken>@<amount>@createLimitOrder@<toToken>@<priceNum>@<priceDenom>@<slippageBp>@<duration>
+```
+
+#### `executeLimitOrder(orderId, priceNum, priceDenom)`
+Execute a limit order (called by backend when price target is met).
 
 **Parameters**:
-- `token`: Token identifier
-- `amount`: Amount to withdraw (0 = withdraw all)
+- `orderId`: Order ID to execute
+- `priceNum`: Current price numerator
+- `priceDenom`: Current price denominator
 
-**Access**: Token owner only
+**Access**: Anyone (typically backend executor)
 **Example**:
 ```bash
-# Withdraw all EGLD
+# Execute order #20 at current price
 mxpy contract call <CONTRACT_ADDRESS> \
-  --function withdraw \
-  --arguments str:EGLD 0 \
+  --function executeLimitOrder \
+  --arguments 0x14 0x025E70 0x03E8 \
+  --pem executor.pem \
+  --gas-limit 80000000 \
+  --chain mainnet
+```
+
+#### `cancelLimitOrder(orderId)`
+Cancel a pending limit order and return tokens to user.
+
+**Parameters**:
+- `orderId`: Order ID to cancel
+
+**Access**: Order creator only
+**Example**:
+```bash
+# Cancel order #20
+mxpy contract call <CONTRACT_ADDRESS> \
+  --function cancelLimitOrder \
+  --arguments 0x14 \
   --pem wallet.pem \
   --gas-limit 10000000 \
-  --chain devnet
+  --chain mainnet
 ```
 
 ### Admin Endpoints
@@ -100,28 +106,31 @@ Update xExchange router address.
 
 ## View Functions
 
-#### `getUserTokenBalance(user, token) -> BigUint`
-Get user's vault balance for a token.
+#### `getPendingOrders() -> Vec<LimitOrder>`
+Get all pending limit orders.
 
-#### `isTokenWhitelisted(token) -> bool`
-Check if token is whitelisted.
+#### `getOrder(orderId) -> LimitOrder`
+Get details of a specific order.
 
-#### `getWhitelistedTokens() -> Vec<TokenIdentifier>`
-Get all whitelisted tokens.
+#### `getUserOrders(userAddress) -> Vec<u64>`
+Get all order IDs for a specific user.
 
 #### `getXExchangeRouter() -> ManagedAddress`
-Get xExchange router address.
+Get xExchange router address for swap execution.
 
 ## Events
 
-#### `deposit(user, token, amount, new_balance)`
-Emitted when user deposits.
+#### `limitOrderCreated(orderId, user, fromToken, toToken, fromAmount, targetPrice)`
+Emitted when a limit order is created.
 
-#### `trade_executed(user, from_token, to_token, from_amount, to_amount, timestamp)`
-Emitted when trade executes.
+#### `limitOrderExecuted(orderId, user, fromToken, toToken, fromAmount, toAmount, executionPrice)`
+Emitted when a limit order executes successfully.
 
-#### `withdraw(user, token, amount, remaining_balance)`
-Emitted when user withdraws.
+#### `limitOrderCancelled(orderId, user, fromToken, refundAmount)`
+Emitted when a limit order is cancelled.
+
+#### `limitOrderExpired(orderId, user, fromToken, refundAmount)`
+Emitted when a limit order expires and tokens are refunded.
 
 ## Deployment
 
@@ -182,32 +191,51 @@ cargo test --test integration_test
 - User-isolated balances (no cross-user contamination)
 - Explicit error messages
 
-### ⚠️ MVP Limitations (TODO for Production)
-- [ ] Replace simulated swap with actual xExchange integration
-- [ ] Add daily/per-trade limits
-- [ ] Implement rate limiting for execute_trade
-- [ ] Add backend authentication for execute_trade
-- [ ] Implement proper access control (only authorized backend can call execute_trade)
-- [ ] Add MEV protection
-- [ ] Implement multi-hop routing for better prices
+### ✅ Production Features (Implemented)
+- [x] Full xExchange integration with real on-chain swaps
+- [x] Direct ESDT payment pattern (no vault needed)
+- [x] Slippage protection (configurable per order)
+- [x] Automatic order execution via backend monitoring
+- [x] Order cancellation and expiration handling
+- [x] Event emissions for audit trail
+- [x] **150+ successful transactions on mainnet!**
 
-## xExchange Integration (TODO)
+### 🚀 Future Enhancements
+- [ ] Multi-hop routing for better prices
+- [ ] Advanced order types (stop-loss, trailing stop)
+- [ ] Gas optimization for cross-shard swaps
+- [ ] MEV protection mechanisms
+- [ ] Rate limiting for order creation
 
-Current implementation uses **simulated swaps** (90% of input). For production:
+## xExchange Integration
 
-1. Add xExchange proxy contract interface
-2. Replace `execute_dex_swap()` with actual contract call:
+**Status:** ✅ **Live on Mainnet**
+
+The contract integrates directly with xExchange router for token swaps:
+
 ```rust
+// Actual production implementation
 self.tx()
-    .to(&router)
+    .to(&router_address)
     .typed(xexchange_proxy::XExchangeProxy)
-    .swap_tokens_fixed_input(to_token, min_amount_out)
-    .payment((from_token, 0, from_amount))
+    .swap_tokens_fixed_input(
+        to_token.clone(),
+        min_amount_out
+    )
+    .payment(EgldOrEsdtTokenPayment::new(
+        from_token.clone(),
+        0,
+        from_amount
+    ))
     .returns(ReturnsResult)
     .sync_call()
 ```
-3. Handle WEGLD wrapping/unwrapping for EGLD trades
-4. Implement multi-pair routing for optimal prices
+
+**Features:**
+- Direct on-chain execution
+- Slippage protection via `min_amount_out`
+- Automatic token routing via xExchange
+- WEGLD/EGLD handling for native token trades
 
 ## File Structure
 ```
@@ -223,33 +251,39 @@ stellarnova-sc/
 
 ## Contract Flow
 
-1. **Setup (One-time)**
+1. **Create Limit Order**
    ```
-   User → deposit(USDC) → Contract stores balance
-   ```
-
-2. **Trading (No signatures)**
-   ```
-   User types: "Buy 1 EGLD with USDC"
-   → AI parses prompt
-   → Backend calls executeTrade()
-   → Contract executes swap
-   → User sees result
+   User → createLimitOrder (sends tokens with tx) → Contract locks tokens
    ```
 
-3. **Withdrawal (Anytime)**
+2. **Automatic Execution**
    ```
-   User → withdraw(token) → Receives tokens back
+   Backend monitors prices every 30 seconds
+   → Price target met?
+   → Backend calls executeLimitOrder()
+   → Contract swaps tokens via xExchange
+   → Tokens sent to user's wallet
+   ```
+
+3. **Cancel Order (Anytime)**
+   ```
+   User → cancelLimitOrder() → Contract refunds tokens
+   ```
+
+4. **Order Expiration**
+   ```
+   Order expires → Backend or user triggers refund → Tokens returned
    ```
 
 ## Demo Checklist
 
-- [ ] Deploy contract to devnet
-- [ ] Whitelist USDC, EGLD, WEGLD
-- [ ] User deposits 100 USDC
-- [ ] Execute test trade via backend
-- [ ] Verify event in explorer
-- [ ] User withdraws remaining balance
+- [x] Deploy contract to mainnet ✅
+- [x] Configure xExchange router ✅
+- [x] Create test limit order (10 USDC → WEGLD) ✅
+- [x] Backend monitors and executes order ✅
+- [x] Verify execution in explorer ✅
+- [x] Test order cancellation ✅
+- [x] **150+ transactions completed on mainnet!** 🎉
 
 ## Support
 
