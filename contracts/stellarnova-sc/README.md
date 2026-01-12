@@ -2,6 +2,8 @@
 
 AI-powered trading agent on MultiversX. Execute trades using natural language without repeated wallet signatures.
 
+**All swaps execute through official xExchange routers for best liquidity and execution.**
+
 ## 🚀 Deployed Contract (Mainnet)
 
 **Contract Address**: `erd1qqqqqqqqqqqqqpgqhcmms89zn6997pvpv9g7ckpcxz4mnjn088zqtvnz29`
@@ -10,16 +12,18 @@ AI-powered trading agent on MultiversX. Execute trades using natural language wi
 
 - [View on Explorer](https://explorer.multiversx.com/accounts/erd1qqqqqqqqqqqqqpgqhcmms89zn6997pvpv9g7ckpcxz4mnjn088zqtvnz29)
 - Architecture: Direct on-chain execution with ESDT payment (fully non-custodial, no vault needed)
+- **Swap Execution**: All trades route through **xExchange routers** for optimal liquidity
 - Supports: Limit orders with automatic execution when target price is met
 
 ## Architecture
 
-**Direct ESDT Payment Model**
+**Direct ESDT Payment Model with xExchange Integration**
 - Users send tokens directly with their limit order transaction
 - Tokens are locked in the contract until execution, cancellation, or expiration
-- Backend monitors and executes orders when price conditions are met
+- Backend monitors prices from xExchange and executes orders when conditions are met
+- **All swaps execute through xExchange routers** - leveraging the deepest liquidity on MultiversX
 - Fully non-custodial: users maintain complete control of their funds
-- No deposit/withdraw needed - seamless on-chain execution
+- No deposit/withdraw needed - seamless on-chain execution via xExchange
 
 ## Core Endpoints
 

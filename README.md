@@ -4,16 +4,21 @@
 
 Trade crypto with plain English. No complex interfaces. No repeated wallet signatures.
 
+**🚀 Try it now:** [https://stellarnova.netlify.app/](https://stellarnova.netlify.app/)
+
+**📜 Live Smart Contract (Mainnet):** [erd1qqqq...088zqtvnz29](https://explorer.multiversx.com/accounts/erd1qqqqqqqqqqqqqpgqhcmms89zn6997pvpv9g7ckpcxz4mnjn088zqtvnz29) • **150+ Transactions** 🎉
+
 ---
 
 ## What is StellarNova?
 
-StellarNova is a **non-custodial DEX interface** that combines instant market swaps with AI-powered limit orders. Users can trade directly via xExchange or set up intelligent limit orders that execute automatically when price conditions are met.
+StellarNova is a **non-custodial DEX interface** that combines instant market swaps with AI-powered limit orders. All trades execute through **xExchange routers** - the most liquid DEX on MultiversX.
 
 Unlike traditional DEX interfaces, StellarNova offers:
-- **Instant Market Swaps** - Direct integration with xExchange router
-- **Atlas AI** - AI-analyzed limit orders with automatic execution
+- **Instant Market Swaps** - Direct integration with xExchange router for best execution
+- **Atlas AI** - AI-analyzed limit orders with automatic execution via xExchange
 - **Natural Language** - Future support for trading via plain English commands
+- **xExchange Powered** - All swaps executed through official xExchange routers
 
 ---
 
@@ -42,7 +47,7 @@ Select tokens & amount
     ↓
 Transaction signed by user's wallet
     ↓
-Swap executed via xExchange router
+Swap executed via xExchange router (best liquidity)
     ↓
 Tokens received instantly
 ```
@@ -55,7 +60,7 @@ Order stored on-chain with target price
     ↓
 Backend executor monitors prices (every 30s)
     ↓
-When target price met → auto-execute swap
+When target price met → auto-execute swap via xExchange
     ↓
 Tokens delivered to user's wallet
 ```
@@ -65,17 +70,19 @@ Tokens delivered to user's wallet
 ## Modes
 
 ### 🟢 Market Swap
-- **Direct xExchange integration** - Swap tokens instantly at current market price
+- **xExchange Router Integration** - Swap tokens instantly at current market price using official xExchange liquidity
+- **Best Execution** - Leverages xExchange's deep liquidity pools for optimal pricing
 - **No intermediaries** - Your wallet signs directly with xExchange router
 - **Simple & fast** - One transaction, immediate execution
 - **Location:** Dashboard → StellarNova Trader
 
 ### 🔵 Atlas AI (Limit Orders)
 - **Set target prices** - Define your entry/exit points
-- **Automatic execution** - Backend monitors and executes when price reached
+- **Automatic execution** - Backend monitors and executes via xExchange when price reached
+- **xExchange powered swaps** - All limit orders execute through official xExchange routers
 - **AI analysis** - Get DeepSeek-powered insights on trade timing
 - **Order management** - View and cancel pending orders
-- **Location:** Atlas → Limit Order Tester
+- **Location:** Atlas → Limit Orders
 
 ---
 
@@ -85,9 +92,10 @@ Tokens delivered to user's wallet
 |-------|------------|
 | **Frontend** | React 18, Vite, TypeScript, Tailwind CSS 4 |
 | **Blockchain** | MultiversX (Rust smart contracts) |
-| **DEX** | xExchange Router (direct integration) |
+| **DEX Integration** | **xExchange Routers** - Official integration for all swaps (market & limit orders) |
+| **Liquidity** | xExchange Liquidity Pools - Best execution on MultiversX |
 | **AI** | DeepSeek API (trade analysis) |
-| **Backend** | Node.js, Express, TypeScript |
+| **Backend** | Node.js, Express, TypeScript (limit order executor) |
 | **Wallet** | MultiversX DeFi Wallet, xPortal, Web Wallet, Passkey |
 
 ---
